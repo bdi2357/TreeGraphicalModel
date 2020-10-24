@@ -27,10 +27,10 @@ import os,sys,re
 from feature_analysis_tickers import predict_col,columns_drop
 
 
-def create_tree(data,target_col,excluded_strs,output_dir,name):
+def create_tree(data,target_col,excluded_strs,output_dir,name,max_depth=3):
 	AAA = predict_col(data = data,name = name , target_col = target_col,excluded_strs = ["_f"],models = [DTC],output_dir=output_dir)
 	tar_file2= os.path.join(output_dir,"%s_tree_model.dot"%name)
-	tree.export_graphviz(decision_tree=DTC, out_file=tar_file2,max_depth=3,feature_names=AAA[0],filled = True,rounded=True)
+	tree.export_graphviz(decision_tree=DTC, out_file=tar_file2,max_depth=max_depth,feature_names=AAA[0],filled = True,rounded=True)
 	os.system("dot -Tpng %s -o %s"%(tar_file2,tar_file2.replace("dot","png")))
 
 
@@ -68,13 +68,7 @@ if __name__ == "__main__":
 	print("df_shape : ",df.shape)
 	create_tree(data = df,target_col = target_col,excluded_strs= excluded_strs,output_dir = output_dir,name=name)
 
-	"""
 	
-	AAA = predict_col(data = cvx,name = "CVX", target_col = target_col,excluded_strs = ["_f"],models = [RFC,DTC],output_dir=output_dir)
-	tar_file2= "../tmp/tmp_tree.dot"
-	tree.export_graphviz(decision_tree=DTC, out_file=tar_file2,max_depth=3,feature_names=AAA[0],filled = True,rounded=True)
-	os.system("dot -Tpng %s -o %s"%(tar_file2,tar_file2.replace("dot","png")))
-	"""
 
 
 
