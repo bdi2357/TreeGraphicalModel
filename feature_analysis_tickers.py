@@ -164,8 +164,10 @@ def predict_col(data,name,target_col,excluded_strs,models,output_dir):
     #print('Mean Abs Error: {:.2f}'.format(scores))
     LL[model_name]= sorted(zip(X.columns,clf.feature_importances_),key = lambda x:x[1],reverse =True)
     #LL[model_name].sort(key = lambda x:x[1],reverse =True)
+    """
     for jj in range(10):
       print(LL[model_name][jj])
+    """
     print("last proba :",pred2_prob[-1])
     
     results[model_name] = [scores,pred2_prob[-1]]
