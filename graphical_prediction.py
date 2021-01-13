@@ -31,6 +31,7 @@ def generate_prediction_path(clf,graph,sample,output_file_name):
                     labels[i] = 'samples = {}'.format(int(label.split('=')[1]) + 1)
 
             node.set('label', '<br/>'.join(labels))
+    print("Image saved to %s"%output_file_name)
     graph.write_png(output_file_name)
 
 def genetate_graph(clf,feature_names,target_names):
@@ -94,23 +95,4 @@ if __name__ == "__main__" :
     
     create_prediction_path(model_path,feature_names,target_names,sample,output_file_name)
     #generate_prediction_path(clf,graph,sample,output_file_name)
-"""
-samples = iris.data[129:130]
-decision_paths = clf.decision_path(samples)
 
-for decision_path in decision_paths:
-    for n, node_value in enumerate(decision_path.toarray()[0]):
-        if node_value == 0:
-            continue
-        node = graph.get_node(str(n))[0]            
-        node.set_fillcolor('green')
-        labels = node.get_attributes()['label'].split('<br/>')
-        for i, label in enumerate(labels):
-            if label.startswith('samples = '):
-                labels[i] = 'samples = {}'.format(int(label.split('=')[1]) + 1)
-
-        node.set('label', '<br/>'.join(labels))
-
-filename = '../tmp_pred_tree.png'
-graph.write_png(filename)
-"""

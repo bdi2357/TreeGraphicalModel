@@ -16,6 +16,7 @@ def decsion_path_visualization(clf,dot_data,samples,output_file):
 	for node in graph.get_node_list():
 	    if node.get_attributes().get('label') is None:
 	        continue
+	   	
 	    if 'samples = ' in node.get_attributes()['label']:
 	        labels = node.get_attributes()['label'].split('<br/>')
 	        for i, label in enumerate(labels):
@@ -29,6 +30,7 @@ def decsion_path_visualization(clf,dot_data,samples,output_file):
 	print(decision_paths[0])
 	for decision_path in decision_paths:
 	    for n, node_value in enumerate(decision_path.toarray()[0]):
+
 	        if node_value == 0:
 	            continue
 	        if len(graph.get_node(str(n))) == 0:
@@ -41,7 +43,12 @@ def decsion_path_visualization(clf,dot_data,samples,output_file):
 	        labels = node.get_attributes()['label'].split('<br/>')
 	        for i, label in enumerate(labels):
 	            if label.startswith('samples = '):
-	                labels[i] = 'samples = {}'.format(int(label.split('=')[1]) + 1)
+	                labels[i] = ''#'samples = {}'.format(int(label.split('=')[1]) + 1)
+	            elif label.startswith('value = '):
+	            	M = re.findall('value = \[.*\]',labels[i])[0]
+	            	labels[i] = labels[i].replace(M,'')
+	             
+	            #labels[i] = ' <br/> '#'samples = {}'.format(int(label.split('=')[1]) + 1)
 
 	        node.set('label', '<br/>'.join(labels))
 	print("after computing tree %0.2f"%(time.time()-stl))

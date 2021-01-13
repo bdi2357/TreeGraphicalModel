@@ -11,11 +11,12 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error
-from sklearn.externals import joblib
+import joblib
 from sklearn import tree
 import random
 import argparse
 import glob
+import pickle
 
 import time 
 start = time.time()
@@ -24,13 +25,32 @@ RFC = RandomForestClassifier()
 DTC = DecisionTreeClassifier(max_depth =3)
 import os,sys,re
 
-from feature_analysis_tickers import predict_col,columns_drop
+def predict_col(data,name,target_col,model,output_dir):
+	data = data.dropna(axis=1,how="all")
+	X = data
+	print("X shape is:",X.shape)
+	y = X.pop(target_col).astype('int')
+	
+	cols_out = X.columns
+	clf = model
+	print(clf.__doc__.split("\n")[0])
+	clf.fit(X,y)
+	model_name = clf.__doc__.split("\n")[0].replace("A ","").replace(".","").replace(" ","_")
+	model_dest = os.path.join(output_dir,name+"_"+target_col+"_"+model_name+".pkl")
+	with open(model_dest,'wb') as fp:
+		pickle.dump(clf, fp)
+	print("model_dest %s"%model_dest)		
+	
+	#joblib.dump(clf, os.path.join(output_dir,name+"_"+target_col+"_"+model_name+".pkl")) 
+	
+	return cols_out
+
 
 
 def create_tree(data,target_col,excluded_strs,output_dir,name,max_depth=3):
-	AAA = predict_col(data = data,name = name , target_col = target_col,excluded_strs = ["_f"],models = [DTC],output_dir=output_dir)
+	cols_out = predict_col(data = data,name = name , target_col = target_col,model = DTC,output_dir=output_dir)
 	tar_file2= os.path.join(output_dir,"%s_tree_model.dot"%name)
-	tree.export_graphviz(decision_tree=DTC, out_file=tar_file2,max_depth=max_depth,feature_names=AAA[0],filled = True,rounded=True)
+	tree.export_graphviz(decision_tree=DTC, out_file=tar_file2,max_depth=max_depth,feature_names=cols_out,filled = True,rounded=True)
 	os.system("dot -Tpng %s -o %s"%(tar_file2,tar_file2.replace("dot","png")))
 
 
