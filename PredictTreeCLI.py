@@ -1,5 +1,5 @@
 import argparse
-from predict_tree import decsion_path_visualization
+from predict_tree import decsion_path_visualization,decsion_path_visualization2
 import pickle
 import pydotplus
 import joblib
@@ -30,4 +30,4 @@ if __name__ == "__main__":
 	dot_data = tree.export_graphviz(clf, out_file=None,feature_names=data.columns ,filled=True, rounded=True,special_characters=True,max_depth=3)
 
 
-	decsion_path_visualization(clf,dot_data,data,os.path.join(args.dest_dir,args.name))
+	decsion_path_visualization2(clf,dot_data,data,os.path.join(args.dest_dir,args.name))

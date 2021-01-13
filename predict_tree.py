@@ -7,6 +7,74 @@ import joblib
 import time
 from sklearn import tree
 from feature_analysis_tickers import columns_drop
+def decsion_path_visualization2(clf,dot_data,samples,output_file=""):
+	def modify_label(labels,i,label):
+		if label.startswith('samples = '):
+			labels[i] = ''#'samples = {}'.format(int(label.split('=')[1]) + 1)
+		elif label.startswith('value = '):
+			M = re.findall('value = \[.*\]',labels[i])[0]
+			labels[i] = labels[i].replace(M,'')
+		elif label.startswith('gini = '):
+			M = re.findall('gini = [0-9]+\.[0-9]+',labels[i])[0]
+			labels[i] = labels[i].replace(M,'')
+		elif label.startswith('entropy = '):
+			M = re.findall('entropy = [0-9]+\.[0-9]+',labels[i])[0]
+			labels[i] = labels[i].replace(M,'')
+
+
+
+	stl = time.time()
+	graph = pydotplus.graph_from_dot_data(dot_data)
+	print("after graph %0.2f"%(time.time()-stl))
+	# empty all nodes, i.e.set color to white and number of samples to zero
+	for node in graph.get_node_list():
+		
+		if node.get_attributes().get('label') is None:
+		    continue
+			
+		if 'samples = ' in node.get_attributes()['label']:
+			node.set_fillcolor('white')
+		labels = node.get_attributes()['label'].split('<br/>')
+		for i, label in enumerate(labels):
+			modify_label(labels,i,label)
+		node.set('label', '<br/>'.join(labels))
+
+	print("after nodes %0.2f"%(time.time()-stl))
+	decision_paths = clf.decision_path(samples)
+	print("after decision_paths %0.2f"%(time.time()-stl))
+	print(decision_paths[0])
+	for decision_path in decision_paths:
+	    for n, node_value in enumerate(decision_path.toarray()[0]):
+
+	        if node_value == 0:
+	            continue
+	        """
+	        if len(graph.get_node(str(n))) == 0:
+	        	break;
+	        """
+	        
+	        node = graph.get_node(str(n))[0]            
+	        node.set_fillcolor('green')
+	        """
+	        labels = node.get_attributes()['label'].split('<br/>')
+	        for i, label in enumerate(labels):
+	            if label.startswith('samples = '):
+	                labels[i] = ''#'samples = {}'.format(int(label.split('=')[1]) + 1)
+	            elif label.startswith('value = '):
+	            	M = re.findall('value = \[.*\]',labels[i])[0]
+	            	labels[i] = labels[i].replace(M,'')
+	             
+	            #labels[i] = ' <br/> '#'samples = {}'.format(int(label.split('=')[1]) + 1)
+
+	        node.set('label', '<br/>'.join(labels))
+	        """
+	print("after computing tree %0.2f"%(time.time()-stl))
+	if output_file != "" :
+		graph.write_png(output_file)
+	return graph
+
+
+
 
 def decsion_path_visualization(clf,dot_data,samples,output_file=""):
 	stl = time.time()
