@@ -8,7 +8,7 @@ import time
 from sklearn import tree
 from feature_analysis_tickers import columns_drop
 
-def decsion_path_visualization(clf,dot_data,samples,output_file):
+def decsion_path_visualization(clf,dot_data,samples,output_file=""):
 	stl = time.time()
 	graph = pydotplus.graph_from_dot_data(dot_data)
 	print("after graph %0.2f"%(time.time()-stl))
@@ -52,7 +52,9 @@ def decsion_path_visualization(clf,dot_data,samples,output_file):
 
 	        node.set('label', '<br/>'.join(labels))
 	print("after computing tree %0.2f"%(time.time()-stl))
-	graph.write_png(output_file)
+	if output_file != "" :
+		graph.write_png(output_file)
+	return graph
 
 if __name__ == "__main__":
 	st = time.time()
