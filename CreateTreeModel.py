@@ -56,46 +56,11 @@ def create_tree(data,target_col,excluded_strs,output_dir,name,max_depth=3):
 		pickle.dump(cols_out,fp)
 	with open(os.path.join(output_dir,"target.pkl"),"wb") as fp:
 		pickle.dump(cn,fp)
-	tar_file2= os.path.join(output_dir,"%s_tree_model.dot"%name)
-	tree.export_graphviz(decision_tree=DTC, out_file=tar_file2,max_depth=max_depth,feature_names=cols_out,class_names=cn,filled = True,rounded=True)
-	os.system("dot -Tpng %s -o %s"%(tar_file2,tar_file2.replace("dot","png")))
+	tar_file= os.path.join(output_dir,"%s_tree_model.dot"%name)
+	tree.export_graphviz(decision_tree=DTC, out_file=tar_file,max_depth=max_depth,feature_names=cols_out,class_names=cn,filled = True,rounded=True)
+	os.system("dot -Tpng %s -o %s"%(tar_file,tar_file.replace("dot","png")))
 
 
-if __name__ == "__main__":
-	"""
-	panel2019 = pd.read_csv("../tmp/test_1000_2019.csv",index_col=[0,1])
-	word_df_g1 = {k:v for k,v in panel2019.groupby(level =1)}
-	word_df_g0 = {k:v for k,v in panel2019.groupby(level =0)}
-	#A1 = pd.read_csv("/Volumes/FINZORFLASH/SHARADAR_RAW/SHARADAR_SF1_086134faf658fcc2cdcb53f4295b5fad.zip",compression="zip")
-	cvx= word_df_g0["CVX"].copy()
-	"""
-	all_f = glob.glob("/Volumes/FINZORFLASH/Merged/*.cvv")
-	for x in all_f:
-		os.system("mv %s %s"%(x,x.replace("cvv","csv")))
-	print(len(all_f))
-	all_f = glob.glob("/Volumes/FINZORFLASH/Merged/*.csv")
-	print(len(all_f))
-	
-	df1 = [pd.read_csv(x) for x in all_f ]
-	df = pd.concat(df1)
-	df = df.sample(frac = 0.03, replace = False)
-	df_sf1 = pd.read_csv("/Users/itaybd/Documents/SHARADAR_INDICATORS_c41c38a0aaed171169bb790c5b4b459a.zip", compression="zip")
-	dict_ind = df_sf1.set_index("indicator")["title"].to_dict()
-	df = df.rename(columns = {c : c.replace(c.split("_")[0],dict_ind[c.split("_")[0]]) for c in df.columns if c.split("_")[0] in dict_ind.keys()})
-	df = df.fillna(-999)
-	print("before ",df.shape)
-	df = df.dropna(1)
-	print("after ",df.shape)
-	target_col = "Return_f60_LT_-20"
-	df[target_col] = df["Return_f60"] < -0.2
-	
-	output_dir = "../tmp"
-	excluded_strs = ["_f"]
-	name = "all_20NN"
-	print("df_shape : ",df.shape)
-	create_tree(data = df,target_col = target_col,excluded_strs= excluded_strs,output_dir = output_dir,name=name)
-
-	
 
 
 
