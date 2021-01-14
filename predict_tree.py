@@ -7,19 +7,29 @@ import joblib
 import time
 from sklearn import tree
 from feature_analysis_tickers import columns_drop
-def decsion_path_visualization2(clf,dot_data,samples,output_file=""):
+def breakdown_values(s,class_names):
+	v = re.findall('[0-9]+',s)
+	sm = [int(x) for x in v]
+	sm2 =  sum(sm)
+	sm = [ str(x[1])+" : "+ str(round(100*(float(x[0])/sm2),1))+"%" for x in zip(sm,class_names)]
+	return ",".join(sm)
+def decsion_path_visualization2(clf,dot_data,samples,class_names,output_file=""):
 	def modify_label(labels,i,label):
 		if label.startswith('samples = '):
 			labels[i] = ''#'samples = {}'.format(int(label.split('=')[1]) + 1)
+		elif label.startswith('class = '):
+			labels[i] = labels[i]
 		elif label.startswith('value = '):
 			M = re.findall('value = \[.*\]',labels[i])[0]
-			labels[i] = labels[i].replace(M,'')
-		elif label.startswith('gini = '):
+			labels[i] = labels[i].replace(M,breakdown_values(labels[i],class_names))
+			#labels[i]#.replace(M,'')
+		elif len(re.findall('gini = [0-9]+\.[0-9]+',labels[i]))>0:#label.startswith('gini = '):
 			M = re.findall('gini = [0-9]+\.[0-9]+',labels[i])[0]
 			labels[i] = labels[i].replace(M,'')
-		elif label.startswith('entropy = '):
+		elif len(re.findall('entropy = [0-9]+\.[0-9]+',labels[i]))>0:
 			M = re.findall('entropy = [0-9]+\.[0-9]+',labels[i])[0]
 			labels[i] = labels[i].replace(M,'')
+		print(i,labels[i])
 
 
 
@@ -37,7 +47,23 @@ def decsion_path_visualization2(clf,dot_data,samples,output_file=""):
 		labels = node.get_attributes()['label'].split('<br/>')
 		for i, label in enumerate(labels):
 			modify_label(labels,i,label)
-		node.set('label', '<br/>'.join(labels))
+		if len(labels)<10:
+			MJ = []
+			print("_"*22)
+			print('<br/>'.join(labels))
+			print(len(labels)," ",'<br/>'.join(labels).count("\n"))
+			print("_"*22)
+			for ii in range(len(labels)):
+				if len(labels[ii])<2:
+					MJ.append(ii)
+			for index in sorted(MJ, reverse=True):
+				del labels[index]
+
+		if len(labels)>2:
+			node.set('label', '<br/>'.join(labels))
+		else:
+			node.set('label', '\n'.join(labels))
+
 
 	print("after nodes %0.2f"%(time.time()-stl))
 	decision_paths = clf.decision_path(samples)
@@ -55,19 +81,7 @@ def decsion_path_visualization2(clf,dot_data,samples,output_file=""):
 	        
 	        node = graph.get_node(str(n))[0]            
 	        node.set_fillcolor('green')
-	        """
-	        labels = node.get_attributes()['label'].split('<br/>')
-	        for i, label in enumerate(labels):
-	            if label.startswith('samples = '):
-	                labels[i] = ''#'samples = {}'.format(int(label.split('=')[1]) + 1)
-	            elif label.startswith('value = '):
-	            	M = re.findall('value = \[.*\]',labels[i])[0]
-	            	labels[i] = labels[i].replace(M,'')
-	             
-	            #labels[i] = ' <br/> '#'samples = {}'.format(int(label.split('=')[1]) + 1)
-
-	        node.set('label', '<br/>'.join(labels))
-	        """
+	        
 	print("after computing tree %0.2f"%(time.time()-stl))
 	if output_file != "" :
 		graph.write_png(output_file)

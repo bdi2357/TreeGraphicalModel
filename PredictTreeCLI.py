@@ -26,8 +26,13 @@ if __name__ == "__main__":
 	print(args.input_model)
 	with open(args.input_model,'rb') as fp:
 		clf = pickle.load(fp)
+	f_path = os.path.abspath(args.input_model)[:-len(os.path.basename(args.input_model))]
+	with open(os.path.join(f_path,"target.pkl"),'rb') as fp:
+		class_names = pickle.load(fp)
+
 	data = pd.read_csv(args.input_file)
-	dot_data = tree.export_graphviz(clf, out_file=None,feature_names=data.columns ,filled=True, rounded=True,special_characters=True,max_depth=3)
+
+	dot_data = tree.export_graphviz(clf, out_file=None,feature_names=data.columns,class_names = class_names ,filled=True, rounded=True,special_characters=True,max_depth=3)
 
 
-	decsion_path_visualization2(clf,dot_data,data,os.path.join(args.dest_dir,args.name))
+	decsion_path_visualization2(clf,dot_data,data,class_names,os.path.join(args.dest_dir,args.name))
