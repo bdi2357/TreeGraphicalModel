@@ -21,19 +21,18 @@ import pickle
 import time 
 start = time.time()
 #from feature_analysis_tickers import predict_col,columns_drop
-RFC = RandomForestClassifier()
-DTC = DecisionTreeClassifier(max_depth =3)
+#RFC = RandomForestClassifier()
+#DTC = DecisionTreeClassifier(max_depth =3)
 import os,sys,re
 
-def predict_col(data,name,target_col,model,output_dir):
+def predict_col(data,name,target_col,model,output_dir,class_names=[],max_depth=3):
 	data = data.dropna(axis=1,how="all")
 	X = data
-	print("X shape is:",X.shape)
-	y = X.pop(target_col) #.astype('int')
+	y = X.pop(target_col) 
 	
 	cols_out = X.columns
-	clf = model
-	print(clf.__doc__.split("\n")[0])
+	clf = model(max_depth=max_depth)
+	
 	clf.fit(X,y)
 	model_name = clf.__doc__.split("\n")[0].replace("A ","").replace(".","").replace(" ","_")
 	model_dest = os.path.join(output_dir,name+"_"+target_col+"_"+model_name+".pkl")
@@ -42,22 +41,25 @@ def predict_col(data,name,target_col,model,output_dir):
 	print("model_dest %s"%model_dest)		
 	
 	#joblib.dump(clf, os.path.join(output_dir,name+"_"+target_col+"_"+model_name+".pkl")) 
-	class_names = []
-	for xx in list(y):
-		if not xx in class_names:
-			class_names.append(xx)
-	return list(cols_out),class_names
+	if class_names == []:
+		for xx in list(y):
+			if not xx in class_names:
+				class_names.append(xx)
+
+	return list(cols_out),class_names,model_dest,clf
 
 
 
-def create_tree(data,target_col,excluded_strs,output_dir,name,max_depth=3):
-	cols_out,cn = predict_col(data = data,name = name , target_col = target_col,model = DTC,output_dir=output_dir)
+def create_tree(data,target_col,excluded_strs,output_dir,name,max_depth=3,class_names=[]):
+	cols_out,cn,model_dest,decision_tree = predict_col(data = data,name = name , target_col = target_col,model = DecisionTreeClassifier,output_dir=output_dir,class_names=class_names,max_depth=max_depth)
 	with open(os.path.join(output_dir,"features.pkl"),"wb") as fp:
 		pickle.dump(cols_out,fp)
 	with open(os.path.join(output_dir,"target.pkl"),"wb") as fp:
 		pickle.dump(cn,fp)
+	with open(model_dest,"wb") as fp:
+		pickle.dump(decision_tree,fp)
 	tar_file= os.path.join(output_dir,"%s_tree_model.dot"%name)
-	tree.export_graphviz(decision_tree=DTC, out_file=tar_file,max_depth=max_depth,feature_names=cols_out,class_names=cn,filled = True,rounded=True)
+	tree.export_graphviz(decision_tree=decision_tree, out_file=tar_file,max_depth=max_depth,feature_names=cols_out,class_names=cn,filled = True,rounded=True)
 	os.system("dot -Tpng %s -o %s"%(tar_file,tar_file.replace("dot","png")))
 
 
