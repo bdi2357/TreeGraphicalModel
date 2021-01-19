@@ -17,7 +17,7 @@ import random
 import argparse
 import glob
 import pickle
-
+from label_transformer import transform_pred,objects_encoder,convert_target
 import time 
 start = time.time()
 #from feature_analysis_tickers import predict_col,columns_drop
@@ -27,7 +27,14 @@ import os,sys,re
 
 def predict_col(data,name,target_col,model,output_dir,class_names=[],max_depth=3):
 	data = data.dropna(axis=1,how="all")
-	X = data
+	X =  data#objects_encoder(data,output_dir)
+
+	if class_names == [] and X.dtypes[target_col] == np.dtype('object'):
+		X,label_dict = convert_target(X,target_col)
+		class_names = list(label_dict.keys())
+	
+	X.to_csv(os.path.join(output_dir,"transformed_input.csv"),index = False)
+
 	y = X.pop(target_col) 
 	
 	cols_out = X.columns
@@ -42,10 +49,10 @@ def predict_col(data,name,target_col,model,output_dir,class_names=[],max_depth=3
 	
 	#joblib.dump(clf, os.path.join(output_dir,name+"_"+target_col+"_"+model_name+".pkl")) 
 	if class_names == []:
-		for xx in list(y):
-			if not xx in class_names:
-				class_names.append(xx)
+		class_names = y.drop_duplicates().tolist()
+	class_names = [str(x).replace('>=','Bigger than ').replace(">",'Bigger than ').replace("<=","Smaller than ").replace("<","Smaller than ") for x in class_names]
 
+	print("class names are:",class_names)
 	return list(cols_out),class_names,model_dest,clf
 
 
