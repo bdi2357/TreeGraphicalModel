@@ -56,7 +56,6 @@ def predict_col(data,name,target_col,model,output_dir,class_names=[],max_depth=3
 	return list(cols_out),class_names,model_dest,clf
 
 
-
 def create_tree(data,target_col,excluded_strs,output_dir,name,max_depth=3,class_names=[]):
 	cols_out,cn,model_dest,decision_tree = predict_col(data = data,name = name , target_col = target_col,model = DecisionTreeClassifier,output_dir=output_dir,class_names=class_names,max_depth=max_depth)
 	with open(os.path.join(output_dir,"features.pkl"),"wb") as fp:
@@ -68,6 +67,12 @@ def create_tree(data,target_col,excluded_strs,output_dir,name,max_depth=3,class_
 	tar_file= os.path.join(output_dir,"%s_tree_model.dot"%name)
 	tree.export_graphviz(decision_tree=decision_tree, out_file=tar_file,max_depth=max_depth,feature_names=cols_out,class_names=cn,filled = True,rounded=True)
 	os.system("dot -Tpng %s -o %s"%(tar_file,tar_file.replace("dot","png")))
+
+
+def create_tree_from_model(decision_tree, tar_file, max_depth, cols_out, class_names):
+	tree.export_graphviz(decision_tree=decision_tree, out_file=tar_file, max_depth=max_depth, feature_names=cols_out,
+						 class_names= class_names, filled=True, rounded=True)
+	os.system("dot -Tpng %s -o %s" % (tar_file, tar_file.replace("dot", "png")))
 
 
 
