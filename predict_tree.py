@@ -73,7 +73,7 @@ if __name__ == "__main__":
 	output_file = "tree_predict_test.png"
 	dot_data = tree.export_graphviz(t2, out_file=None,feature_names=data.columns ,filled=True, rounded=True,special_characters=True,max_depth=3)
 	print("after export_graphviz %0.2f"%(time.time()-st))
-	#graph = pydotplus.graph_from_dot_data(dot_data)
+
 	print(t2(max_depth =3).predict_proba(samples))
 	decsion_path_visualization(t2,dot_data,samples,output_file)
 
