@@ -11,64 +11,70 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error
-from sklearn.externals import joblib
+import joblib
 from sklearn import tree
 import random
 import argparse
 import glob
-
+import pickle
+from label_transformer import transform_pred,objects_encoder,convert_target
 import time 
 start = time.time()
 #from feature_analysis_tickers import predict_col,columns_drop
-RFC = RandomForestClassifier()
-DTC = DecisionTreeClassifier(max_depth =3)
+#RFC = RandomForestClassifier()
+#DTC = DecisionTreeClassifier(max_depth =3)
 import os,sys,re
 
-from feature_analysis_tickers import predict_col,columns_drop
+def predict_col(data,name,target_col,model,output_dir,class_names=[],max_depth=3):
+	data = data.dropna(axis=1,how="all")
+	X =  data#objects_encoder(data,output_dir)
 
-
-def create_tree(data,target_col,excluded_strs,output_dir,name,max_depth=3):
-	AAA = predict_col(data = data,name = name , target_col = target_col,excluded_strs = ["_f"],models = [DTC],output_dir=output_dir)
-	tar_file2= os.path.join(output_dir,"%s_tree_model.dot"%name)
-	tree.export_graphviz(decision_tree=DTC, out_file=tar_file2,max_depth=max_depth,feature_names=AAA[0],filled = True,rounded=True)
-	os.system("dot -Tpng %s -o %s"%(tar_file2,tar_file2.replace("dot","png")))
-
-
-if __name__ == "__main__":
-	"""
-	panel2019 = pd.read_csv("../tmp/test_1000_2019.csv",index_col=[0,1])
-	word_df_g1 = {k:v for k,v in panel2019.groupby(level =1)}
-	word_df_g0 = {k:v for k,v in panel2019.groupby(level =0)}
-	#A1 = pd.read_csv("/Volumes/FINZORFLASH/SHARADAR_RAW/SHARADAR_SF1_086134faf658fcc2cdcb53f4295b5fad.zip",compression="zip")
-	cvx= word_df_g0["CVX"].copy()
-	"""
-	all_f = glob.glob("/Volumes/FINZORFLASH/Merged/*.cvv")
-	for x in all_f:
-		os.system("mv %s %s"%(x,x.replace("cvv","csv")))
-	print(len(all_f))
-	all_f = glob.glob("/Volumes/FINZORFLASH/Merged/*.csv")
-	print(len(all_f))
+	if class_names == [] and X.dtypes[target_col] == np.dtype('object'):
+		X,label_dict = convert_target(X,target_col)
+		class_names = list(label_dict.keys())
 	
-	df1 = [pd.read_csv(x) for x in all_f ]
-	df = pd.concat(df1)
-	df = df.sample(frac = 0.03, replace = False)
-	df_sf1 = pd.read_csv("/Users/itaybd/Documents/SHARADAR_INDICATORS_c41c38a0aaed171169bb790c5b4b459a.zip", compression="zip")
-	dict_ind = df_sf1.set_index("indicator")["title"].to_dict()
-	df = df.rename(columns = {c : c.replace(c.split("_")[0],dict_ind[c.split("_")[0]]) for c in df.columns if c.split("_")[0] in dict_ind.keys()})
-	df = df.fillna(-999)
-	print("before ",df.shape)
-	df = df.dropna(1)
-	print("after ",df.shape)
-	target_col = "Return_f60_LT_-20"
-	df[target_col] = df["Return_f60"] < -0.2
-	
-	output_dir = "../tmp"
-	excluded_strs = ["_f"]
-	name = "all_20NN"
-	print("df_shape : ",df.shape)
-	create_tree(data = df,target_col = target_col,excluded_strs= excluded_strs,output_dir = output_dir,name=name)
+	X.to_csv(os.path.join(output_dir,"transformed_input.csv"),index = False)
 
+	y = X.pop(target_col) 
 	
+	cols_out = X.columns
+	clf = model(max_depth=max_depth)
+	
+	clf.fit(X,y)
+	model_name = clf.__doc__.split("\n")[0].replace("A ","").replace(".","").replace(" ","_")
+	model_dest = os.path.join(output_dir,name+"_"+target_col+"_"+model_name+".pkl")
+	with open(model_dest,'wb') as fp:
+		pickle.dump(clf, fp)
+	print("model_dest %s"%model_dest)		
+	
+	#joblib.dump(clf, os.path.join(output_dir,name+"_"+target_col+"_"+model_name+".pkl")) 
+	if class_names == []:
+		class_names = y.drop_duplicates().tolist()
+	class_names = [str(x).replace('>=','Bigger than ').replace(">",'Bigger than ').replace("<=","Smaller than ").replace("<","Smaller than ") for x in class_names]
+
+	print("class names are:",class_names)
+	return list(cols_out),class_names,model_dest,clf
+
+
+def create_tree(data,target_col,excluded_strs,output_dir,name,max_depth=3,class_names=[]):
+	cols_out,cn,model_dest,decision_tree = predict_col(data = data,name = name , target_col = target_col,model = DecisionTreeClassifier,output_dir=output_dir,class_names=class_names,max_depth=max_depth)
+	with open(os.path.join(output_dir,"features.pkl"),"wb") as fp:
+		pickle.dump(cols_out,fp)
+	with open(os.path.join(output_dir,"target.pkl"),"wb") as fp:
+		pickle.dump(cn,fp)
+	with open(model_dest,"wb") as fp:
+		pickle.dump(decision_tree,fp)
+	tar_file= os.path.join(output_dir,"%s_tree_model.dot"%name)
+	tree.export_graphviz(decision_tree=decision_tree, out_file=tar_file,max_depth=max_depth,feature_names=cols_out,class_names=cn,filled = True,rounded=True)
+	os.system("dot -Tpng %s -o %s"%(tar_file,tar_file.replace("dot","png")))
+
+
+def create_tree_from_model(decision_tree, tar_file, max_depth, cols_out, class_names):
+	tree.export_graphviz(decision_tree=decision_tree, out_file=tar_file, max_depth=max_depth, feature_names=cols_out,
+						 class_names= class_names, filled=True, rounded=True)
+	os.system("dot -Tpng %s -o %s" % (tar_file, tar_file.replace("dot", "png")))
+
+
 
 
 

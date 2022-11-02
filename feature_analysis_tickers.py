@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error
-from sklearn.externals import joblib
+import joblib
 import random
 start = time.time()
 if os.path.basename(os.getcwd()) == "FinzorAnalytics":

@@ -7,47 +7,79 @@ import joblib
 import time
 from sklearn import tree
 from feature_analysis_tickers import columns_drop
+def breakdown_values(s,class_names):
+	v = re.findall('[0-9]+',s)
+	sm = [int(x) for x in v]
+	sm2 =  sum(sm)
+	sm = [ str(x[1])+" : "+ str(round(100*(float(x[0])/sm2),1))+"%" for x in zip(sm,class_names)]
+	return ",".join(sm)
+def decsion_path_visualization(clf,dot_data,samples,class_names,output_file=""):
+	def modify_label(labels,i,label):
+		if label.startswith('samples = '):
+			labels[i] = ''#'samples = {}'.format(int(label.split('=')[1]) + 1)
+		elif label.startswith('class = '):
+			labels[i] = labels[i]
+		elif label.startswith('value = '):
+			M = re.findall('value = \[.*\]',labels[i])[0]
+			labels[i] = labels[i].replace(M,breakdown_values(labels[i],class_names))
+			#labels[i]#.replace(M,'')
+		elif len(re.findall('gini = [0-9]+\.[0-9]+',labels[i]))>0:#label.startswith('gini = '):
+			M = re.findall('gini = [0-9]+\.[0-9]+',labels[i])[0]
+			labels[i] = labels[i].replace(M,'')
+		elif len(re.findall('entropy = [0-9]+\.[0-9]+',labels[i]))>0:
+			M = re.findall('entropy = [0-9]+\.[0-9]+',labels[i])[0]
+			labels[i] = labels[i].replace(M,'')
+		
 
-def decsion_path_visualization(clf,dot_data,samples,output_file=""):
+
+
 	stl = time.time()
 	graph = pydotplus.graph_from_dot_data(dot_data)
-	print("after graph %0.2f"%(time.time()-stl))
+	
 	# empty all nodes, i.e.set color to white and number of samples to zero
 	for node in graph.get_node_list():
-	    if node.get_attributes().get('label') is None:
-	        continue
-	    if 'samples = ' in node.get_attributes()['label']:
-	        labels = node.get_attributes()['label'].split('<br/>')
-	        for i, label in enumerate(labels):
-	            if label.startswith('samples = '):
-	                labels[i] = 'samples = 0'
-	        node.set('label', '<br/>'.join(labels))
-	        node.set_fillcolor('white')
-	print("after nodes %0.2f"%(time.time()-stl))
+		
+		if node.get_attributes().get('label') is None:
+		    continue
+			
+		if 'samples = ' in node.get_attributes()['label']:
+			node.set_fillcolor('white')
+		labels = node.get_attributes()['label'].split('<br/>')
+		for i, label in enumerate(labels):
+			modify_label(labels,i,label)
+		if len(labels)<10:
+			MJ = []
+			for ii in range(len(labels)):
+				if len(labels[ii])<2:
+					MJ.append(ii)
+			for index in sorted(MJ, reverse=True):
+				del labels[index]
+
+		if len(labels)>2:
+			node.set('label', '<br/>'.join(labels))
+		else:
+			out_label = '\n'.join(labels)
+			if out_label[-1:]==">" :
+				out_label = out_label[:-1]
+			node.set('label', out_label)
+
+
 	decision_paths = clf.decision_path(samples)
-	print("after decision_paths %0.2f"%(time.time()-stl))
-	print(decision_paths[0])
 	for decision_path in decision_paths:
 	    for n, node_value in enumerate(decision_path.toarray()[0]):
+
 	        if node_value == 0:
 	            continue
-	        if len(graph.get_node(str(n))) == 0:
-	        	break;
-	        print(str(n))
-	        print("#"*55)
-	        print(graph.get_node(str(n)))
+	       
+	        
 	        node = graph.get_node(str(n))[0]            
 	        node.set_fillcolor('green')
-	        labels = node.get_attributes()['label'].split('<br/>')
-	        for i, label in enumerate(labels):
-	            if label.startswith('samples = '):
-	                labels[i] = 'samples = {}'.format(int(label.split('=')[1]) + 1)
-
-	        node.set('label', '<br/>'.join(labels))
-	print("after computing tree %0.2f"%(time.time()-stl))
 	if output_file != "" :
 		graph.write_png(output_file)
 	return graph
+
+
+
 
 if __name__ == "__main__":
 	st = time.time()
@@ -62,7 +94,6 @@ if __name__ == "__main__":
 	p1 = p1.dropna(1)
 	target_col = "Return_f60_LT_-20"
 	p1[target_col] = p1["Return_f60"] < -0.2
-	print("before columns_drop %0.2f"%(time.time()-st))
 	data = columns_drop(p1,["_f"],target_col,True)
 	print("after columns_drop %0.2f"%(time.time()-st))
 	data = data.dropna(axis=1,how="all")
